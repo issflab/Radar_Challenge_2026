@@ -2,6 +2,8 @@
 
 This repository runs inference for one or more spoofing detection models on RADAR evaluation audio and generates a score file from the averaged model outputs.
 
+Disclaimer: the current `test.py` evaluation workflow has only been tested with the Safe challenge model so far.
+
 The main use case is ensemble evaluation:
 - load one or more checkpoints from `config.yaml`
 - run all models on the same input utterances
@@ -99,10 +101,6 @@ data_config:
   bonfide_label: bona-fide
   num_samples: 192000
   sample_rate: 16000
-  duration: 4.0375
-  eval_duration: 4.0375
-  num_workers: 4
-  augment: "False"
 ```
 
 ## Installation
