@@ -1,20 +1,42 @@
-model_paths: ["/data/ssl_anti_spoofing/models_v4_mlaad_spoofceleb_FF/wavlm_swa.pth"]
-score_dir: "Score_Files"
-eval_output: "radar_eval_scores.txt"
-data_config:
-  "dataset": "radar_challenge_dev"
-  "data_dir": "/data/radar_challenge_data/RADAR2026-dev/flac"
-  protocol_path: "/data/radar_challenge_data/RADAR2026-dev"
-  "protocol_filename": "dev_protocol.txt"
-  protocol_delimiter: ","
-  protocol_file_id_column: 0
-  protocol_label_column: 1
-  bonfide_label: "bona-fide"
-  num_samples: 192000
-  "sample_rate": 16000
-  "duration": 4.0375
-  "eval_duration": 4.0375
-  "num_workers": 4
-  "augment": "False"
+# ─────────────────────────────────────────────────────────
+# Model
+# ─────────────────────────────────────────────────────────
+model_type: supcon
 
-cuda_device: cuda:0
+model_params:
+  stage1_ckpt: checkpoints/supcon/best_model_1_stage_1.pt
+  stage2_ckpt: checkpoints/supcon/best_model_1_stage_2.pt
+  model_name: facebook/wav2vec2-xls-r-300m
+  threshold: -9.399353
+  higher_score_means_bonafide: true   # pipeline negates raw score → fake score for submission
+
+# ─────────────────────────────────────────────────────────
+# Protocol file  (RADAR 2026 format)
+# ─────────────────────────────────────────────────────────
+# Each line: <utt_id>,<absolute_audio_path>
+# Example:
+#   RADAR2026-DEV000001,/nfs/.../RADAR2026-DEV000001.flac
+protocol_file: /nfs/turbo/umd-hafiz/issf_server_data/radar_challenge_data/RADAR2026-dev/dev_protocol.txt
+
+protocol:
+  key_col: 0          # column index of the utterance ID
+  path_col: 1         # column index of the absolute audio path
+  label_col: -1       # -1 = no labels in this file (set to column index if labels are present)
+  delimiter: ","
+
+# ─────────────────────────────────────────────────────────
+# Audio  (only used if path_col == -1 above)
+# ─────────────────────────────────────────────────────────
+# audio_root: /path/to/dataset/
+# audio_subdir: flac
+# audio_extension: .flac
+
+# ─────────────────────────────────────────────────────────
+# Output
+# ─────────────────────────────────────────────────────────
+output_score_file: RADAR2026-dev/score.tsv   # RADAR requires this exact filename
+
+# ─────────────────────────────────────────────────────────
+# Inference settings
+# ─────────────────────────────────────────────────────────
+sample_rate: 16000
