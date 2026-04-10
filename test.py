@@ -173,7 +173,7 @@ def main():
         shuffle=False,
     )
 
-    out_score_file = os.path.join(out_dir, f"{data_name}_eval_score.txt")
+    out_score_file = os.path.join(out_dir, f"{data_name}_{config.eval_output}.txt")
     produce_evaluation(eval_loader, models, device, out_score_file)
 
     eval_eer = calculate_EER(cm_scores_file=out_score_file)
