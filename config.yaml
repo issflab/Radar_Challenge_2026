@@ -1,0 +1,20 @@
+model_paths: ["/data/ssl_anti_spoofing/models_v4_mlaad_spoofceleb_FF/wavlm_swa.pth"]
+score_dir: "Score_Files"
+eval_output: "radar_eval_scores.txt"
+data_config:
+  "dataset": "radar_challenge_dev"
+  "data_dir": "/data/radar_challenge_data/RADAR2026-dev/flac"
+  protocol_path: "/data/radar_challenge_data/RADAR2026-dev"
+  "protocol_filename": "dev_protocol.txt"
+  protocol_delimiter: ","
+  protocol_file_id_column: 0
+  protocol_label_column: 1
+  bonfide_label: "bona-fide"
+  num_samples: 192000
+  "sample_rate": 16000
+  "duration": 4.0375
+  "eval_duration": 4.0375
+  "num_workers": 4
+  "augment": "False"
+
+cuda_device: cuda:0
