@@ -1,20 +1,28 @@
 model_paths: ["/data/ssl_anti_spoofing/models_v4_mlaad_spoofceleb_FF/wavlm_swa.pth"]
 score_dir: "Score_Files"
-eval_output: "radar_eval_scores.txt"
+# eval_output: "radar_eval_scores"
+eval_output: "eval_scores"
+
 data_config:
-  "dataset": "radar_challenge_dev"
-  "data_dir": "/data/radar_challenge_data/RADAR2026-dev/flac"
-  protocol_path: "/data/radar_challenge_data/RADAR2026-dev"
-  "protocol_filename": "dev_protocol.txt"
-  protocol_delimiter: ","
+  # dataset: "radar_challenge_dev"
+  dataset: "LlamaPartialSpoof_R01TTS_0_a"
+  # data_dir: "/data/radar_challenge_data/RADAR2026-dev/flac"
+  data_dir: "/data/radar_challenge_data/LlamaPartialSpoof/R01TTS.0.a"
+  # protocol_path: "/data/radar_challenge_data/RADAR2026-dev"
+  protocol_path: "/data/radar_challenge_data/LlamaPartialSpoof"
+  # protocol_filename: "dev_protocol.txt"
+  protocol_filename: "label_R01TTS.0.a.txt"
+  protocol_delimiter: " "
   protocol_file_id_column: 0
-  protocol_label_column: 1
-  bonfide_label: "bona-fide"
+  protocol_label_column: 2
+  protocol_has_labels: "True"
+  bonfide_label: "bonafide"
   num_samples: 192000
-  "sample_rate": 16000
-  "duration": 4.0375
-  "eval_duration": 4.0375
-  "num_workers": 4
-  "augment": "False"
+  sample_rate: 16000
+  duration: 4.0375
+  eval_duration: 4.0375
+  num_workers: 4
+  augment: "False"
+  file_extension: ".wav"
 
 cuda_device: cuda:0

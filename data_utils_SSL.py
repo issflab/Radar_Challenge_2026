@@ -31,21 +31,23 @@ def _normalize_delim(d):
         return None
     return d
 
-def parse_protocol(path, *, delimiter: Optional[str], fileid_col: int, label_col: int, bonafide_label='bonafide', has_label: bool = True):
+def parse_protocol(path, *, delimiter: Optional[str], fileid_col: int, label_col: Optional[int] = None, bonafide_label='bonafide', has_label: bool = True):
     """
     Generic protocol reader driven by config.
     Returns:
         if has_label: (labels_dict, key_list)
         else: key_list
     """
+
+    if has_label and label_col is None:
+        raise ValueError("`label_col` must be provided when `has_label=True`.")
+
     delim = _normalize_delim(delimiter)
     keys = []
     labels = {}
 
     with open(path, 'r') as f:
         for i, raw in enumerate(f):
-            if i == 0:
-                continue  # skip header
             line = raw.strip()
             if not line or line.startswith("#"):
                 continue
@@ -73,14 +75,14 @@ def pad(x, max_len=64600):
     
 
 class Radar_Dataset_eval(Dataset):
-    def __init__(self, list_IDs, base_dir, config):
+    def __init__(self, list_IDs, base_dir, config, labels=None):
         '''
         self.list_IDs	: list of strings (each string: utt key),
         self.labels      : dictionary (key: utt key, value: label integer)
         '''
                
         self.list_IDs = list_IDs
-        # self.labels = labels
+        self.labels = labels
         self.base_dir = base_dir
         self.config = config
         # self.cut=64600 # take ~4 sec audio (64600 samples)
@@ -92,7 +94,7 @@ class Radar_Dataset_eval(Dataset):
     def __getitem__(self, index):
         
         utt_id = self.list_IDs[index]
-        full_path = os.path.join(self.base_dir, utt_id + '.flac')
+        full_path = os.path.join(self.base_dir, utt_id + self.config["data_config"]["file_extension"])
         
         if not os.path.isfile(full_path):
             raise FileNotFoundError(f"Audio file missing: {full_path}")
@@ -104,6 +106,8 @@ class Radar_Dataset_eval(Dataset):
 
         X_pad= pad(X,self.cut)
         x_inp= Tensor(X_pad)
-        # target = self.labels[utt_id]
-        
-        return x_inp, utt_id
+        if self.labels is None:
+            return x_inp, utt_id
+
+        target = self.labels[utt_id]
+        return x_inp, utt_id, target
