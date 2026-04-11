@@ -77,6 +77,20 @@ def average_model_outputs(models, batch_x):
     return torch.stack(batch_outputs, dim=0).mean(dim=0)
 
 
+def parse_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "y"}:
+            return True
+        if normalized in {"false", "0", "no", "n"}:
+            return False
+    raise ValueError(f"Cannot interpret boolean value: {value}")
+
+
 def produce_evaluation(data_loader, models, device, save_path):
     weight = torch.FloatTensor([0.1, 0.9]).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
@@ -84,21 +98,39 @@ def produce_evaluation(data_loader, models, device, save_path):
     val_loss = 0.0
     num_total = 0.0
     fname_list = []
-    key_list = []
+    label_list = []
     score_list = []
+    has_labels = None
 
     with torch.no_grad():
-        for batch_x, utt_id in tqdm(data_loader):
+        for batch in tqdm(data_loader):
+            if len(batch) == 2:
+                batch_x, utt_id = batch
+                batch_y = None
+            elif len(batch) == 3:
+                batch_x, utt_id, batch_y = batch
+            else:
+                raise ValueError(
+                    f"Unexpected batch structure with {len(batch)} items. Expected 2 or 3."
+                )
+
             batch_size = batch_x.size(0)
             num_total += batch_size
 
             batch_x = batch_x.to(device)
+            if batch_y is not None:
+                batch_y = batch_y.view(-1).type(torch.int64).to(device)
 
             averaged_output = average_model_outputs(models, batch_x)
+
             batch_score = averaged_output[:, 1].detach().cpu().numpy().ravel().tolist()
 
+            if batch_y is not None:
+                batch_loss = criterion(averaged_output, batch_y)
+                val_loss += batch_loss.item() * batch_size
+                label_list.extend(["bonafide" if y.item() == 1 else "spoof" for y in batch_y])
+
             fname_list.extend(utt_id)
-            # key_list.extend(["bonafide" if y.item() == 1 else "spoof" for y in batch_y])
             score_list.extend(batch_score)
 
     if not fname_list:
@@ -107,18 +139,27 @@ def produce_evaluation(data_loader, models, device, save_path):
     if len(fname_list) != len(score_list):
         raise ValueError("Mismatch between utterance IDs and generated scores.")
 
-    score_df = pd.DataFrame(
-        {
-            "utt_id": fname_list,
-            "score": score_list,
-        }
-    )
+    if has_labels:
+        score_df = pd.DataFrame(
+            {
+                "utt_id": fname_list,
+                "label": label_list,
+                "score": score_list,
+            }
+        )
+    else:
+        score_df = pd.DataFrame(
+            {
+                "utt_id": fname_list,
+                "score": score_list,
+            }
+        )
     score_df.to_csv(save_path, sep=" ", index=False, header=False)
 
-    val_loss /= num_total
+    val_loss = val_loss / num_total if has_labels else None
     print(f"Scores saved to {save_path}")
 
-    return val_loss
+    return val_loss, has_labels
 
 
 def main():
@@ -142,8 +183,11 @@ def main():
     eval_protocol = os.path.join(protocols_path, protocol_filename)
     protocol_delimiter = data_config["protocol_delimiter"]
     protocol_file_id_column = data_config["protocol_file_id_column"]
-    protocol_label_column = data_config["protocol_label_column"]
+    protocol_label_column = data_config.get("protocol_label_column")
     bonfide_label = data_config["bonfide_label"]
+    protocol_has_labels = parse_bool(
+        data_config.get("protocol_has_labels", data_config.get("protocol_has_label", False))
+    )
 
     out_dir = config["score_dir"]
     os.makedirs(out_dir, exist_ok=True)
@@ -152,18 +196,26 @@ def main():
     device = torch.device(cuda_device if torch.cuda.is_available() else "cpu")
     models = load_models(model_paths, args, device)
 
-    file_eval = parse_protocol(
+    protocol_data = parse_protocol(
         eval_protocol,
         delimiter=protocol_delimiter,
-        key_col=protocol_file_id_column,
+        fileid_col=protocol_file_id_column,
+        label_col=protocol_label_column,
         bonafide_label=bonfide_label,
-        has_label=False,
+        has_label=protocol_has_labels,
     )
+
+    if protocol_has_labels:
+        labels_eval, file_eval = protocol_data
+    else:
+        labels_eval = None
+        file_eval = protocol_data
 
     eval_set = Radar_Dataset_eval(
         list_IDs=file_eval,
         base_dir=dataset_path,
         config=config,
+        labels=labels_eval,
     )
 
     eval_loader = DataLoader(
@@ -173,14 +225,18 @@ def main():
         shuffle=False,
     )
 
-    out_score_file = os.path.join(out_dir, f"{data_name}_{config.eval_output}.txt")
-    produce_evaluation(eval_loader, models, device, out_score_file)
+    out_score_file = os.path.join(out_dir, f"{data_name}_{config.get('eval_output')}.txt")
+    eval_loss, has_labels = produce_evaluation(eval_loader, models, device, out_score_file)
 
-    eval_eer = calculate_EER(cm_scores_file=out_score_file)
+    eval_eer = calculate_EER(cm_scores_file=out_score_file) if has_labels else None
     eval_balanced_acc = None
 
     print(f"Loaded {len(models)} model(s) from config: {model_paths}")
-    print(f"Eval EER: {eval_eer:.2f}%, Eval Balanced Acc: {eval_balanced_acc}")
+    if eval_eer is not None:
+        print(f"Eval loss: {eval_loss:.6f}")
+        print(f"Eval EER: {eval_eer:.2f}%, Eval Balanced Acc: {eval_balanced_acc}")
+    else:
+        print("Protocol has no labels; skipped loss and EER computation.")
 
 
 if __name__ == "__main__":
