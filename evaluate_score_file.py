@@ -58,59 +58,6 @@ def gen_score_file(protocol_file_path, score_file_path, config, out_path=None):
     score_df.to_csv(out_path, sep=" ", header=None, index=False)
     return out_path
 
-def compute_equal_error_rate(cm_score_file):
-
-    print(cm_score_file)
-
-    # Load CM scores
-    cm_data = np.genfromtxt(cm_score_file, dtype=str)
-    cm_utt_id = cm_data[:, 0]
-
-    cm_keys = cm_data[:, 1]
-    cm_scores = cm_data[:, 2].astype(float)
-
-    # cm_sources = cm_data[:, 1]
-    # cm_keys = cm_data[:, 2]
-    # cm_scores = cm_data[:, 3].astype(float)
-
-    # print(cm_utt_id)
-    # print(cm_keys)
-    # print(cm_scores)
-
-    # cm_data = pd.read_csv(cm_score_file)
-
-    # print(cm_data)
-
-    # cm_utt_id = cm_data['AUDIO_FILE_NAME'].to_list()
-    # cm_keys = cm_data['KEY'].to_list()
-    # cm_scores = cm_data['Scores'].to_list()
-
-    # other_cm_scores = -cm_scores
-
-    # Extract bona fide (real human) and spoof scores from the CM scores
-    # y_scores = [1.5, 2.0, 3.6, 1.2]
-    # y_true = [1, -1, 1, 1]
-    # bona_cm = [1.5, 3.6, 1.2]
-    # spoof_cm = [2.0]
-
-    bona_cm = cm_scores[cm_keys == 'bonafide']
-    spoof_cm = cm_scores[cm_keys == 'spoof']
-
-    # EERs of the standalone systems and fix ASV operating point to EER threshold
-    eer_cm = em.compute_eer(bona_cm, spoof_cm)[0]
-
-    # other_eer_cm = em.compute_eer(other_cm_scores[cm_scores > 0], other_cm_scores[cm_scores <= 0])[0]
-
-    # print(other_eer_cm)
-
-    print('\nCM SYSTEM')
-    # print('   EER            = {:8.5f} % (Equal error rate for countermeasure)'.format(min(eer_cm, other_eer_cm) * 100))
-    print('   EER            = {:8.5f} % (Equal error rate for countermeasure)'.format(eer_cm * 100))
-
-    # return min(eer_cm, other_eer_cm)
-    return eer_cm
-
-
 
 if __name__ == "__main__":
 
