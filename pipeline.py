@@ -21,6 +21,12 @@ from utils.protocol import build_audio_path, load_protocol
 def parse_args():
     parser = argparse.ArgumentParser(description="Audio deepfake evaluation pipeline")
     parser.add_argument("--config", required=True, help="Path to config.yaml")
+    parser.add_argument("--protocol-file", default=None,
+                        help="Override protocol_file from config")
+    parser.add_argument("--audio-root", default=None,
+                        help="Override audio_root from config (used when path_col=-1)")
+    parser.add_argument("--output", default=None,
+                        help="Override output_score_file from config")
     return parser.parse_args()
 
 
@@ -136,6 +142,13 @@ def _print_eer(scores: dict, labels: dict, utt_ids: list) -> None:
 def main():
     args = parse_args()
     cfg = load_config(args.config)
+
+    if args.protocol_file is not None:
+        cfg["protocol_file"] = args.protocol_file
+    if args.audio_root is not None:
+        cfg["audio_root"] = args.audio_root
+    if args.output is not None:
+        cfg["output_score_file"] = args.output
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
