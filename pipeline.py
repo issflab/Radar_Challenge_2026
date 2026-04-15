@@ -27,6 +27,16 @@ def parse_args():
                         help="Override audio_root from config (used when path_col=-1)")
     parser.add_argument("--output", default=None,
                         help="Override output_score_file from config")
+    parser.add_argument("--key-col", type=int, default=None,
+                        help="Override protocol.key_col from config")
+    parser.add_argument("--label-col", type=int, default=None,
+                        help="Override protocol.label_col from config")
+    parser.add_argument("--path-col", type=int, default=None,
+                        help="Override protocol.path_col from config")
+    parser.add_argument("--delimiter", default=None,
+                        help="Override protocol.delimiter from config (use 'null' for whitespace)")
+    parser.add_argument("--audio-extension", default=None,
+                        help="Override audio_extension from config (e.g. .wav, .flac)")
     return parser.parse_args()
 
 
@@ -133,8 +143,11 @@ def _print_eer(scores: dict, labels: dict, utt_ids: list) -> None:
         print("[WARN] Not enough bonafide/spoof samples to compute EER.")
         return
 
-    eer, threshold = compute_eer(np.array(bonafide_scores), np.array(spoof_scores))
-    print(f"EER: {100 * eer:.2f}%  (threshold: {threshold:.6f})")
+    # compute_eer expects bonafide (target) scores to be HIGH (ASV convention).
+    # Stored scores are fake scores (bonafide=low, spoof=high), so negate before passing.
+    # The threshold is returned in the negated space; flip sign for display.
+    eer, neg_threshold = compute_eer(-np.array(bonafide_scores), -np.array(spoof_scores))
+    print(f"EER: {100 * eer:.2f}%  (threshold: {-neg_threshold:.6f})")
     print(f"  Bonafide samples: {len(bonafide_scores)}")
     print(f"  Spoof samples:    {len(spoof_scores)}")
 
@@ -149,6 +162,16 @@ def main():
         cfg["audio_root"] = args.audio_root
     if args.output is not None:
         cfg["output_score_file"] = args.output
+    if args.key_col is not None:
+        cfg["protocol"]["key_col"] = args.key_col
+    if args.label_col is not None:
+        cfg["protocol"]["label_col"] = args.label_col
+    if args.path_col is not None:
+        cfg["protocol"]["path_col"] = args.path_col
+    if args.delimiter is not None:
+        cfg["protocol"]["delimiter"] = None if args.delimiter.lower() == "null" else args.delimiter
+    if args.audio_extension is not None:
+        cfg["audio_extension"] = args.audio_extension
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")

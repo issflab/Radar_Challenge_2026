@@ -41,7 +41,7 @@ audio_extension: .flac
 # ─────────────────────────────────────────────────────────
 # Output
 # ─────────────────────────────────────────────────────────
-output_score_file: RADAR2026-dev/score.tsv   # RADAR requires this exact filename
+output_score_file: scores/RADAR2026-dev/score.tsv   # RADAR requires this exact filename
 
 # ─────────────────────────────────────────────────────────
 # Inference settings
