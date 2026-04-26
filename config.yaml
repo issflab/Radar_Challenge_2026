@@ -4,8 +4,8 @@
 model_type: supcon
 
 model_params:
-  stage1_ckpt: checkpoints/supcon/best_model_1_stage_1.pt
-  stage2_ckpt: checkpoints/supcon/best_model_1_stage_2.pt
+  stage1_ckpt: checkpoints/supcon/stage_1/best_model_1_stage_1.pt
+  stage2_ckpt: checkpoints/supcon/stage_2/best_model_1_stage_2.pt
   model_name: facebook/wav2vec2-xls-r-300m
   threshold: -9.399353
   higher_score_means_bonafide: true   # pipeline negates raw score → fake score for submission
@@ -23,7 +23,7 @@ model_params:
 #   → key_col=0, label_col=2, path_col=-1, delimiter: null
 #   Supply audio root via --audio-root CLI flag or set audio_root below.
 #
-protocol_file: /nfs/turbo/umd-hafiz/issf_server_data/radar_challenge_data/RADAR2026-dev/dev_protocol.txt
+protocol_file: /home/jsudan/Radar_Challenge_2026/eval_protocol.txt
 
 protocol:
   key_col: 0          # column index of the utterance ID
@@ -41,7 +41,7 @@ audio_extension: .flac
 # ─────────────────────────────────────────────────────────
 # Output
 # ─────────────────────────────────────────────────────────
-output_score_file: scores/RADAR2026-dev/score.tsv   # RADAR requires this exact filename
+output_score_file: scores/RADAR2026-eval/score.tsv   # RADAR requires this exact filename
 
 # ─────────────────────────────────────────────────────────
 # Inference settings
